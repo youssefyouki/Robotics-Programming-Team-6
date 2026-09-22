@@ -44,7 +44,7 @@ class MuJoCoROS: public rclcpp::Node
          * @param simulationFrequency The rate in Hz to update the simulation
          * @param visualisationFrequency The rate with which to refresh the 3D rendering of the robot, environment
          */
-        MuJoCoROS(const std::string &xmlLocation);
+        MuJoCoROS(const std::string &xmlLocation, const std::string &nodeName = "mujoco_node");
         
        /**
         * @brief Deconstructor.

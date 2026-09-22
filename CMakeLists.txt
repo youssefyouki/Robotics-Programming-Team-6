@@ -19,7 +19,7 @@ find_package(sensor_msgs REQUIRED)                                              
 find_package(std_msgs REQUIRED)                                                                     # std_msgs::msg::Float64MultiArray
 
 # MuJoCo
-set(MUJOCO_PATH "/opt/mujoco/mujoco-3.2.0") # UPDATE THIS TO YOUR MUJOCO PATH
+set(MUJOCO_PATH "/home/youssef/Downloads/mujoco-3.14.0") # UPDATE THIS TO YOUR MUJOCO PATH
 include_directories(include)                                                                        # Local header files
 include_directories(${MUJOCO_PATH}/include/mujoco)                                                  # MuJoCo header files
 include_directories(${MUJOCO_PATH}/include)                                                         # Additional MuJoCo header files
@@ -30,17 +30,24 @@ link_directories(${MUJOCO_PATH}/lib)                                            
 ####################################################################################################
 add_executable(mujoco_node src/nodes/mujoco_node.cpp
                            src/mujoco_ros.cpp)                                                      # Define new executable, list source files
+
+add_executable(fr3_node src/nodes/fr3_node.cpp
+                         src/mujoco_ros.cpp)
     
 target_link_libraries(mujoco_node mujoco glfw)                                                      # Link GLFW libraries to the executable
                                      
 ament_target_dependencies(mujoco_node rclcpp sensor_msgs std_msgs)                                  # List ROS2 dependencies for this executable
+
+target_link_libraries(fr3_node mujoco glfw)
+
+ament_target_dependencies(fr3_node rclcpp sensor_msgs std_msgs)
 
 
 ####################################################################################################
 #                                           INSTALLATION                                           #
 ####################################################################################################
 
-install(TARGETS mujoco_node
+install(TARGETS mujoco_node fr3_node
         DESTINATION lib/${PROJECT_NAME})                                                            # Install so ROS2 can find it
 
 install(DIRECTORY launch

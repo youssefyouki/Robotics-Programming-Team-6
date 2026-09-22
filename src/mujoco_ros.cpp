@@ -21,7 +21,7 @@
   ////////////////////////////////////////////////////////////////////////////////////////////////////
  //                                         Constructor                                            //
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MuJoCoROS::MuJoCoROS(const std::string &xmlLocation) : Node("mujoco_node")
+MuJoCoROS::MuJoCoROS(const std::string &xmlLocation, const std::string &nodeName) : Node(nodeName)
 {
     // Declare & get parameters for this node
     std::string jointStateTopicName   = this->declare_parameter<std::string>("joint_state_topic_name", "joint_state");
@@ -73,7 +73,7 @@ MuJoCoROS::MuJoCoROS(const std::string &xmlLocation) : Node("mujoco_node")
     // Initialize Graphics Library FrameWork (GLFW)
     if (not glfwInit()) throw std::runtime_error("Failed to initialise Graphics Library Framework (GLFW).");
 
-    _window = glfwCreateWindow(1200, 900, "MuJoCo Visualization", nullptr, nullptr);
+    _window = glfwCreateWindow(1600, 1000, "MuJoCo Visualization", nullptr, nullptr);
     
     if (not _window) throw std::runtime_error("Failed to create Graphics Library Framework (GLFW) window.");
     
