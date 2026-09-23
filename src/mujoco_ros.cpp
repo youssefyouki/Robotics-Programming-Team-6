@@ -38,6 +38,8 @@ MuJoCoROS::MuJoCoROS(const std::string &xmlLocation, const std::string &nodeName
     
      // Resize arrays based on the number of joints in the model
     _jointState = mj_makeData(_model);                                                              // Initialize joint state
+    int homeKeyframe = mj_name2id(_model, mjOBJ_KEY, "home");
+    if (homeKeyframe >= 0) mj_resetDataKeyframe(_model, _jointState, homeKeyframe);
     _jointStateMessage.name.resize(_model->nq);
     _jointStateMessage.position.resize(_model->nq);
     _jointStateMessage.velocity.resize(_model->nq);

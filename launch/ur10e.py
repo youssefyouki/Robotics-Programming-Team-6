@@ -13,7 +13,7 @@ def generate_launch_description():
 
     ur10e = Node(
         package='mujoco_ros2',
-        executable='fr3_node',
+        executable='ur10e_node',
         name='ur10e_node',
         output='screen',
         arguments=[xml_scene_path],
@@ -31,11 +31,4 @@ def generate_launch_description():
         ],
     )
 
-    motion = Node(
-        package='mujoco_ros2',
-        executable='ur10e_motion',
-        name='ur10e_motion',
-        output='screen',
-    )
-
-    return LaunchDescription([ur10e, motion])
+    return LaunchDescription([ur10e])
