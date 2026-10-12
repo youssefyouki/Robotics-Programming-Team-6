@@ -31,23 +31,23 @@ link_directories(${MUJOCO_PATH}/lib)                                            
 add_executable(mujoco_node src/nodes/mujoco_node.cpp
                            src/mujoco_ros.cpp)                                                      # Define new executable, list source files
 
-add_executable(fr3_node src/nodes/fr3_node.cpp
-                         src/mujoco_ros.cpp)
-    
+add_executable(low_cost_robot_arm_node src/nodes/low_cost_robot_arm_node.cpp
+                                       src/mujoco_ros.cpp)
+
 target_link_libraries(mujoco_node mujoco glfw)                                                      # Link GLFW libraries to the executable
-                                     
+
 ament_target_dependencies(mujoco_node rclcpp sensor_msgs std_msgs)                                  # List ROS2 dependencies for this executable
 
-target_link_libraries(fr3_node mujoco glfw)
+target_link_libraries(low_cost_robot_arm_node mujoco glfw)
 
-ament_target_dependencies(fr3_node rclcpp sensor_msgs std_msgs)
+ament_target_dependencies(low_cost_robot_arm_node rclcpp sensor_msgs std_msgs)
 
 
 ####################################################################################################
 #                                           INSTALLATION                                           #
 ####################################################################################################
 
-install(TARGETS mujoco_node fr3_node
+install(TARGETS mujoco_node low_cost_robot_arm_node
         DESTINATION lib/${PROJECT_NAME})                                                            # Install so ROS2 can find it
 
 install(DIRECTORY launch

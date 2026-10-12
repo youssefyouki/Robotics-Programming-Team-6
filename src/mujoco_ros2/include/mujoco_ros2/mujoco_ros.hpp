@@ -78,7 +78,16 @@ class MuJoCoROS: public rclcpp::Node
         sensor_msgs::msg::JointState _jointStateMessage;                                            ///< For publishing joint state data over ROS2
         
         int _simFrequency = 1000;                                                                   ///< Speed at which the frequency runs
-    
+
+        bool   _mouseButtonLeft  = false;                                                           ///< Tracks left mouse button state
+        bool   _mouseButtonRight = false;                                                           ///< Tracks right mouse button state
+        double _lastMouseX = 0.0;                                                                   ///< Last cursor X position
+        double _lastMouseY = 0.0;                                                                   ///< Last cursor Y position
+
+        static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+        static void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos);
+        static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+
         /**
          * @brief Updates the robot state, publishes joint state information.
          */

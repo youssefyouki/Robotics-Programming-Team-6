@@ -98,6 +98,12 @@ MuJoCoROS::MuJoCoROS(const std::string &xmlLocation, const std::string &nodeName
     
     for(int i = 0; i < 3; ++i) _camera.lookat[i] = focalPoint[i]; 
 
+    // Register mouse callbacks so the user can rotate/pan/zoom with the mouse
+    glfwSetWindowUserPointer(_window, this);
+    glfwSetMouseButtonCallback(_window, mouse_button_callback);
+    glfwSetCursorPosCallback(_window,   cursor_pos_callback);
+    glfwSetScrollCallback(_window,      scroll_callback);
+
     // Create MuJoCo rendering context
     glfwMakeContextCurrent(_window);
     mjr_makeContext(_model, &_context, mjFONTSCALE_100);
@@ -216,6 +222,41 @@ void MuJoCoROS::update_visualization()
     // Swap buffers and process events
     glfwSwapBuffers(_window);
     glfwPollEvents();
+}
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
+ //                                        Mouse callbacks                                         //
+////////////////////////////////////////////////////////////////////////////////////////////////////
+void MuJoCoROS::mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
+{
+    auto* self = static_cast<MuJoCoROS*>(glfwGetWindowUserPointer(window));
+    if (button == GLFW_MOUSE_BUTTON_LEFT)  self->_mouseButtonLeft  = (action == GLFW_PRESS);
+    if (button == GLFW_MOUSE_BUTTON_RIGHT) self->_mouseButtonRight = (action == GLFW_PRESS);
+    glfwGetCursorPos(window, &self->_lastMouseX, &self->_lastMouseY);
+}
+
+void MuJoCoROS::cursor_pos_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    auto* self = static_cast<MuJoCoROS*>(glfwGetWindowUserPointer(window));
+
+    double dx = xpos - self->_lastMouseX;
+    double dy = ypos - self->_lastMouseY;
+    self->_lastMouseX = xpos;
+    self->_lastMouseY = ypos;
+
+    if (!self->_mouseButtonLeft && !self->_mouseButtonRight) return;
+
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+
+    mjtMouse action = self->_mouseButtonLeft ? mjMOUSE_ROTATE_V : mjMOUSE_MOVE_H;
+    mjv_moveCamera(self->_model, action, dx/height, dy/height, &self->_camera);
+}
+
+void MuJoCoROS::scroll_callback(GLFWwindow* window, double /*xoffset*/, double yoffset)
+{
+    auto* self = static_cast<MuJoCoROS*>(glfwGetWindowUserPointer(window));
+    mjv_moveCamera(self->_model, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &self->_camera);
 }
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
