@@ -7,8 +7,8 @@ def generate_launch_description():
 
     directory = get_package_share_directory('mujoco_ros2')                                          # Gets relative path of mujoco_ros2 package    
     
-    xmlScenePath =  os.path.join(directory, 'model', 'scene.xml')
-    
+    xmlScenePath =  os.path.join(directory, 'model', 'franka_emika_panda', 'scene.xml')
+
     if not os.path.exists(xmlScenePath):
         raise FileNotFoundError(f"Scene file does not exist: {xmlScenePath}.")
 
@@ -21,7 +21,7 @@ def generate_launch_description():
         parameters = [   
                         {"joint_state_topic_name" : "joint_state"},
                         {"joint_command_topic_name" : "joint_commands"},
-                        {"control_mode" : "VELOCITY"},
+                        {"control_mode" : "POSITION"},
                         {"simulation_frequency" : 1000},
                         {"visualisation_frequency" : 20},
                         {"camera_focal_point": [0.0, 0.0, 0.25]},
