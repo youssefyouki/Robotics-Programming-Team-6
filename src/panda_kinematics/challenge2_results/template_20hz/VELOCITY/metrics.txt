@@ -1,0 +1,11 @@
+mode: VELOCITY   (instructor template node, dt = 0.05 s)
+publish rate achieved: 20 Hz (target 20)
+main motion, per-joint RMS error [deg]: [1.06e+01 1.20e+01 7.54e-05 8.74e+01 1.23e-03 1.10e+02 4.49e+01]
+main motion, per-joint max error [deg]: [1.68e+01 2.00e+01 1.23e-04 1.22e+02 1.31e-03 1.35e+02 4.49e+01]
+main motion, hand position error: rms 610.4 mm, max 838.2 mm
+joint offset from the plan when the main motion starts [deg]: [-2.49e-15 -2.00e+01 -1.91e-05  1.22e+02 -1.31e-03 -1.35e+02 -4.49e+01]
+joint error at end of main motion [deg]: [-1.68e+01  5.28e+00  1.21e-04  4.18e+01 -1.14e-03 -8.06e+01 -4.49e+01]
+settled joint error vs goal [deg]: [-1.68e+01  5.28e+00  1.18e-04  4.18e+01 -1.14e-03 -8.06e+01 -4.49e+01]
+settled hand error vs goal: 265.6 mm
+delivered fraction of the commanded joint displacement (joints 1,2,4,6): [2.000e-02 2.023e-02 1.215e-05 1.938e-06]
+equivalent lag behind the plan (joint 4): 0 ms

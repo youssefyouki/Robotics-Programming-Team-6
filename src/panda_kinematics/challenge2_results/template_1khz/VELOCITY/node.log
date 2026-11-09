@@ -1,0 +1,26 @@
+[INFO] [1794253569.340168658] [trajectory_node]: Trajectory generated: 4001 samples over 4.0 s at 1000 Hz.
+Traceback (most recent call last):
+  File "/tmp/tmp1fz8byub_trajectory_node.py", line 711, in <module>
+    main()
+  File "/tmp/tmp1fz8byub_trajectory_node.py", line 705, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 749, in _wait_for_ready_callbacks
+    entity_count += waitable.get_num_entities()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/event_handler.py", line 120, in get_num_entities
+    return NumberOfEntities(num_events=1)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/waitable.py", line 26, in __init__
+    def __init__(
+
+KeyboardInterrupt

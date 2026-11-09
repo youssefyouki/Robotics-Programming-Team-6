@@ -1,0 +1,13 @@
+[INFO] [1794253552.705860656] [tracking_logger]: logging POSITION run (template node, dt = 0.001), 6001 command messages expected
+[INFO] [1794253561.455451732] [tracking_logger]: mode: POSITION   (instructor template node, dt = 0.001 s)
+[INFO] [1794253561.456035474] [tracking_logger]: publish rate achieved: 999 Hz (target 1000)
+[INFO] [1794253561.456522676] [tracking_logger]: main motion, per-joint RMS error [deg]: [5.30e-01 7.15e+00 7.18e-03 1.92e+01 1.68e-02 2.62e+01 6.70e+00]
+[INFO] [1794253561.456996967] [tracking_logger]: main motion, per-joint max error [deg]: [8.42e-01 3.36e+01 2.67e-02 1.22e+02 4.96e-02 1.35e+02 4.49e+01]
+[INFO] [1794253561.457463442] [tracking_logger]: main motion, hand position error: rms 165.1 mm, max 838.2 mm
+[INFO] [1794253561.457935755] [tracking_logger]: joint offset from the plan when the main motion starts [deg]: [ 6.00e-15 -2.00e+01 -1.91e-05  1.22e+02 -1.31e-03 -1.35e+02 -4.49e+01]
+[INFO] [1794253561.458400592] [tracking_logger]: joint error at end of main motion [deg]: [-0.01  0.21  0.   -0.25 -0.01 -0.03  0.  ]
+[INFO] [1794253561.458861769] [tracking_logger]: settled joint error vs goal [deg]: [-1.12e-09  1.97e-01  1.44e-03 -1.86e-01 -1.18e-02 -7.90e-02  7.13e-04]
+[INFO] [1794253561.459324951] [tracking_logger]: settled hand error vs goal: 4.3 mm
+[INFO] [1794253561.459780566] [tracking_logger]: delivered fraction of the commanded joint displacement (joints 1,2,4,6): [1.    0.966 1.004 0.999]
+[INFO] [1794253561.460241797] [tracking_logger]: equivalent lag behind the plan (joint 4): 225 ms
+[INFO] [1794253561.868106653] [tracking_logger]: results saved to /home/youssef/Robo_arm/src/panda_kinematics/challenge2_results/template_1khz/POSITION

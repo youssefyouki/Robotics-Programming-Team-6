@@ -1,3 +1,5 @@
+import os
+from glob import glob
 from setuptools import find_packages, setup
 
 package_name = 'panda_kinematics'
@@ -10,6 +12,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,7 +27,10 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'kinematics = panda_kinematics.kinematics:main'
+            'kinematics = panda_kinematics.kinematics:main',
+            'trajectory_node = panda_kinematics.trajectory_node:main',
+            'trajectory_experiment = panda_kinematics.trajectory_experiment:main',
+            'tracking_logger = panda_kinematics.tracking_logger:main',
         ],
     },
 )

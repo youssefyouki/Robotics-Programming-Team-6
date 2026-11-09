@@ -1,0 +1,15 @@
+[INFO] [1794253595.280266408] [tracking_logger]: logging VELOCITY run (template node, dt = 0.05), 121 command messages expected
+/home/youssef/Robo_arm/install/panda_kinematics/lib/python3.12/site-packages/panda_kinematics/tracking_logger.py:126: RuntimeWarning: divide by zero encountered in divide
+  m["delivered"] = ((q_set - q_act[i0]) / commanded)[moving]
+[INFO] [1794253603.306521899] [tracking_logger]: mode: VELOCITY   (instructor template node, dt = 0.05 s)
+[INFO] [1794253603.307776800] [tracking_logger]: publish rate achieved: 20 Hz (target 20)
+[INFO] [1794253603.308940973] [tracking_logger]: main motion, per-joint RMS error [deg]: [1.06e+01 1.20e+01 7.54e-05 8.74e+01 1.23e-03 1.10e+02 4.49e+01]
+[INFO] [1794253603.310052385] [tracking_logger]: main motion, per-joint max error [deg]: [1.68e+01 2.00e+01 1.23e-04 1.22e+02 1.31e-03 1.35e+02 4.49e+01]
+[INFO] [1794253603.311148681] [tracking_logger]: main motion, hand position error: rms 610.4 mm, max 838.2 mm
+[INFO] [1794253603.312154809] [tracking_logger]: joint offset from the plan when the main motion starts [deg]: [-2.49e-15 -2.00e+01 -1.91e-05  1.22e+02 -1.31e-03 -1.35e+02 -4.49e+01]
+[INFO] [1794253603.313156767] [tracking_logger]: joint error at end of main motion [deg]: [-1.68e+01  5.28e+00  1.21e-04  4.18e+01 -1.14e-03 -8.06e+01 -4.49e+01]
+[INFO] [1794253603.314242467] [tracking_logger]: settled joint error vs goal [deg]: [-1.68e+01  5.28e+00  1.18e-04  4.18e+01 -1.14e-03 -8.06e+01 -4.49e+01]
+[INFO] [1794253603.315243618] [tracking_logger]: settled hand error vs goal: 265.6 mm
+[INFO] [1794253603.316205975] [tracking_logger]: delivered fraction of the commanded joint displacement (joints 1,2,4,6): [2.000e-02 2.023e-02 1.215e-05 1.938e-06]
+[INFO] [1794253603.317188124] [tracking_logger]: equivalent lag behind the plan (joint 4): 0 ms
+[INFO] [1794253603.716618594] [tracking_logger]: results saved to /home/youssef/Robo_arm/src/panda_kinematics/challenge2_results/template_20hz/VELOCITY

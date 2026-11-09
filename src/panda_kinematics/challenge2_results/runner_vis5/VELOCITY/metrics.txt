@@ -1,0 +1,11 @@
+mode: VELOCITY   (extended runner, dt = 0.001 s)
+publish rate achieved: 998 Hz (target 1000)
+main motion, per-joint RMS error [deg]: [0.56 1.09 0.   2.24 0.01 1.06 0.27]
+main motion, per-joint max error [deg]: [0.86 1.63 0.01 3.64 0.02 1.78 0.27]
+main motion, hand position error: rms 30.9 mm, max 49.1 mm
+joint offset from the plan when the main motion starts [deg]: [ 3.53e-09  3.39e-01 -5.18e-03  4.70e-01 -1.02e-02 -9.50e-01 -2.73e-01]
+joint error at end of main motion [deg]: [-0.11  0.24  0.    0.06 -0.01 -0.61 -0.27]
+settled joint error vs goal [deg]: [-0.1   0.22  0.    0.13 -0.01 -0.66 -0.27]
+settled hand error vs goal: 3.0 mm
+delivered fraction of the commanded joint displacement (joints 1,2,4,6): [0.994 1.005 0.996 0.995]
+equivalent lag behind the plan (joint 4): 93 ms
