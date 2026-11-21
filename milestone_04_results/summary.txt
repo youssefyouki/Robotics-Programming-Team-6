@@ -1,0 +1,8 @@
+Sorting cycle evaluation - computed_torque
+samples: 9262  duration: 37.0 s (control period 4.0 ms)
+joint RMS error   [rad]: [0.0001, 0.0003, 0.0003, 0.0003, 0.0002]
+joint max error   [rad]: [0.0004, 0.0008, 0.0008, 0.0008, 0.0005]
+TCP error  RMS 0.05 mm   max 0.17 mm
+command RMS (torque N*m or position rad): [0.383, 0.23, 0.666, 0.618, 0.198]
+boxes in the bin of their colour: red=YES, green=YES, blue=YES
+SORTING SUCCESSFUL
