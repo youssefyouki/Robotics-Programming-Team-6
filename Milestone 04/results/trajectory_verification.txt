@@ -1,0 +1,19 @@
+--- A. quintic polynomial (200 random boundary-condition sets) ---
+PASS  boundary conditions (q, qd, qdd) at t=0 and t=T                9.215e-14  (tol 1e-09)
+--- B. joint-space segments (approach / transfer / home): 7 segments ---
+PASS  velocity and acceleration are zero at the end of every segment 7.105e-15  (tol 1e-09)
+PASS  peak joint speed vs analytic 1.875*distance/T (ratio - 1)      5.77e-15  (tol 0.001)
+PASS  peak joint speed below the planning limit                      -0.001 rad/s (tol 0)
+--- C. task-space segments (descend / lift / lower / retreat): 12 segments ---
+PASS  TCP deviation from the straight line                           9.71e-08 mm (tol 0.001)
+PASS  tool pitch stays vertical (-90 deg)                            2.98e-12 deg (tol 1e-06)
+PASS  TCP speed vs minimum-jerk profile 30 t^2 (1-t)^2 L/T           6.180e-06 m/s (tol 0.0001)
+PASS  qd (J^-1 v form) vs TCP velocity from differentiating the path 2.848e-06 m/s (tol 0.0001)
+PASS  velocity and acceleration are zero at the end of every task segment 0.000e+00  (tol 1e-06)
+--- D. whole plan: 34.8 s, 17410 samples, 25 segments ---
+PASS  joint limit violation                                          0.000e+00 rad (tol 1e-09)
+PASS  qd consistent with dq/dt (max over the plan)                   4.410e-05 rad/s (tol 0.005)
+PASS  qdd consistent with dqd/dt (away from segment junctions)       3.313e-04 rad/s^2 (tol 0.002)
+PASS  reference is continuous at every segment junction (step per sample) 2.673e-07 rad (tol 0.005)
+PASS  TCP reaches every box (grasp) and every bin (release)          6.07e-12 mm (tol 0.01)
+ALL CHECKS PASSED

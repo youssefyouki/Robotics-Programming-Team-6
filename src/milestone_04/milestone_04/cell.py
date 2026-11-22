@@ -49,9 +49,51 @@ def box_start_position(color):
     return np.array([BELT_CENTER[0], y, BOX_Z])
 
 
+def _add_scenery(spec):
+    """Operator, chair and tool rack around the cell (visual only: no collisions, no physics)."""
+    w = spec.worldbody
+    box, capsule, sphere = mujoco.mjtGeom.mjGEOM_BOX, mujoco.mjtGeom.mjGEOM_CAPSULE, mujoco.mjtGeom.mjGEOM_SPHERE
+    off = dict(contype=0, conaffinity=0)
+
+    # --- operator (worker) standing at the end of the conveyor, and a chair next to them
+    k = 0.30                                       # the arm is a tabletop robot (reach ~0.25 m): a figurine-scale worker
+    px, py = BELT_CENTER[0], -(BELT_HALF[1] + 0.055)   # far end of the conveyor, away from the default camera
+    z = lambda h: h * k
+    orange, skin = [0.95, 0.55, 0.1, 1], [0.9, 0.75, 0.6, 1]
+    w.add_geom(name="person_legs", type=capsule, fromto=[px, py, z(0.02), px, py, z(0.17)], size=[0.035 * k, 0, 0],
+               rgba=[0.2, 0.25, 0.5, 1], **off)
+    w.add_geom(name="person_torso", type=capsule, fromto=[px, py, z(0.19), px, py, z(0.36)], size=[0.045 * k, 0, 0],
+               rgba=orange, **off)
+    for side, name in ((-1, "l"), (1, "r")):
+        w.add_geom(name=f"person_arm_{name}", type=capsule,
+                   fromto=[px, py + side * 0.05 * k, z(0.33), px - 0.045 * k, py + side * 0.06 * k, z(0.22)],
+                   size=[0.014 * k, 0, 0], rgba=orange, **off)
+    w.add_geom(name="person_head", type=sphere, pos=[px, py, z(0.43)], size=[0.04 * k, 0, 0], rgba=skin, **off)
+    w.add_geom(name="person_helmet", type=sphere, pos=[px, py, z(0.445)], size=[0.042 * k, 0, 0],
+               rgba=[1.0, 0.9, 0.1, 1], **off)
+
+    cx, cy, kc = px - 0.075, py - 0.005, 0.36
+    w.add_geom(name="chair_seat", type=box, pos=[cx, cy, 0.075 * kc], size=[0.05 * kc, 0.05 * kc, 0.006], rgba=[0.3, 0.3, 0.35, 1], **off)
+    w.add_geom(name="chair_back", type=box, pos=[cx - 0.045 * kc, cy, 0.13 * kc], size=[0.006, 0.05 * kc, 0.055 * kc],
+               rgba=[0.3, 0.3, 0.35, 1], **off)
+    for dx in (-0.04, 0.04):
+        for dy in (-0.04, 0.04):
+            w.add_geom(name=f"chair_leg_{dx}_{dy}", type=box, pos=[cx + dx * kc, cy + dy * kc, 0.035 * kc],
+                       size=[0.004, 0.004, 0.035 * kc], rgba=[0.2, 0.2, 0.22, 1], **off)
+
+    # --- tool rack behind the robot
+    w.add_geom(name="rack_back", type=box, pos=[0.19, 0.0, 0.05], size=[0.004, 0.09, 0.05], rgba=[0.55, 0.45, 0.3, 1], **off)
+    for i, y in enumerate((-0.06, -0.02, 0.02, 0.06)):
+        w.add_geom(name=f"tool_{i}", type=capsule, pos=[0.175, y, 0.06], size=[0.004, 0.02, 0], euler=[0, 90, 0],
+                   rgba=[0.8, 0.8, 0.85, 1], **off)
+        w.add_geom(name=f"tool_hook_{i}", type=capsule, pos=[0.183, y, 0.085], size=[0.0025, 0.008, 0], euler=[0, 90, 0],
+                   rgba=[0.5, 0.5, 0.55, 1], **off)
+
+
 def _add_cell(spec):
     w = spec.worldbody
     box = mujoco.mjtGeom.mjGEOM_BOX
+    _add_scenery(spec)
 
     w.add_geom(name="belt", type=box, pos=[*BELT_CENTER, BELT_TOP_Z - BELT_HALF[2]],
                size=BELT_HALF, rgba=[0.18, 0.18, 0.2, 1], friction=[1.0, 0.005, 0.0001])
@@ -101,17 +143,36 @@ def load_cell(actuation="position", scene_xml=None, with_cell=True, offscreen=No
         spec.visual.global_.offheight = max(offscreen[1], 480)
         spec.visual.quality.offsamples = 8            # multisample anti-aliasing for the offscreen view
     model = spec.compile()
+    saved = capture_position_params(model)
     if actuation == "torque":
-        for i in range(ARM_JOINTS):       # force = ctrl (direct joint torque)
-            model.actuator_gainprm[i, :] = 0.0
-            model.actuator_gainprm[i, 0] = 1.0
-            model.actuator_biasprm[i, :] = 0.0
-            model.actuator_biastype[i] = int(mujoco.mjtBias.mjBIAS_NONE)
-            model.actuator_ctrllimited[i] = 0
+        set_actuation(model, "torque", saved)
     elif actuation != "position":
         raise ValueError("actuation must be 'position' or 'torque'")
     data = mujoco.MjData(model)
     return model, data
+
+
+def capture_position_params(model):
+    """Gains of the built-in joint position servos (call right after compiling the model)."""
+    a = slice(0, ARM_JOINTS)
+    return (model.actuator_gainprm[a].copy(), model.actuator_biasprm[a].copy(),
+            model.actuator_biastype[a].copy(), model.actuator_ctrllimited[a].copy())
+
+
+def set_actuation(model, kind, saved):
+    """Switch the five arm actuators between 'position' (built-in servo) and 'torque' (force = ctrl)."""
+    a = slice(0, ARM_JOINTS)
+    if kind == "torque":
+        model.actuator_gainprm[a] = 0.0
+        model.actuator_gainprm[a, 0] = 1.0
+        model.actuator_biasprm[a] = 0.0
+        model.actuator_biastype[a] = int(mujoco.mjtBias.mjBIAS_NONE)
+        model.actuator_ctrllimited[a] = 0
+    elif kind == "position":
+        model.actuator_gainprm[a], model.actuator_biasprm[a] = saved[0], saved[1]
+        model.actuator_biastype[a], model.actuator_ctrllimited[a] = saved[2], saved[3]
+    else:
+        raise ValueError("kind must be 'position' or 'torque'")
 
 
 def box_body_ids(model):

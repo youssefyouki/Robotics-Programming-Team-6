@@ -4,7 +4,7 @@ MuJoCo simulator node for the sorting cell (Milestone 04, lock-step co-simulatio
 
   Publishes  : m4/state, m4/boxes (10 Hz), m4/boxes_initial (once), sensor_msgs/JointState
              m4/view_state [t, qpos...] (~40 Hz, rendered by view_node for the panel)
-  Subscribes : m4/actuator_cmd [t, u(5), gripper], m4/sim_control
+  Subscribes : m4/actuator_cmd [t, u(5), gripper, kind], m4/sim_control
   Parameters : actuation ('position' | 'torque'), viewer (bool, native MuJoCo window), realtime (bool),
                speed (float), viewer_every (int, control ticks between viewer refreshes),
                min_subscribers (int, nodes that must listen to m4/state before starting),
@@ -40,7 +40,10 @@ class CellSimNode(Node):
         self.declare_parameter("stream_image", False)     # publish m4/view_state for the view node
 
         self.stream = self.get_parameter("stream_image").value
-        self.model, self.data = C.load_cell(actuation=self.get_parameter("actuation").value)
+        self.model, self.data = C.load_cell(actuation="position")
+        self.pos_params = C.capture_position_params(self.model)
+        self.kind = "position"
+        self._set_kind(self.get_parameter("actuation").value)
         C.reset_to_home(self.model, self.data)
         self.joint_names = [mujoco.mj_id2name(self.model, mujoco.mjtObj.mjOBJ_JOINT, i)
                             for i in range(C.ARM_JOINTS + 1)]
@@ -81,6 +84,13 @@ class CellSimNode(Node):
         self.watchdog = self.create_timer(3.0, self._watchdog)
         self.get_logger().info("Sorting cell ready; waiting for planner and controller.")
 
+    def _set_kind(self, kind):
+        if kind != self.kind:
+            C.set_actuation(self.model, kind, self.pos_params)
+            self.kind = kind
+            if hasattr(self, "get_logger"):
+                self.get_logger().info(f"Actuators now take {'joint torques' if kind == 'torque' else 'position targets'}.")
+
     # ------------------------------------------------------------------ lock-step handshake
     def _try_start(self):
         if self.count_subscribers(T.STATE) >= self.get_parameter("min_subscribers").value and self.count_publishers(T.ACTUATOR_CMD) >= 1 \
@@ -103,6 +113,8 @@ class CellSimNode(Node):
         if self.paused:                       # keep the command; it is applied on resume
             self.held_cmd = msg
             return
+        if len(msg.data) > 7:                  # the controller states which kind of command this is
+            self._set_kind("torque" if msg.data[7] > 0.5 else "position")
         u = np.array(msg.data[1:6])
         self.data.ctrl[:C.ARM_JOINTS] = u
         self.data.ctrl[C.ARM_JOINTS] = msg.data[6]

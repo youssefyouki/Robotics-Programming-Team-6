@@ -2,22 +2,20 @@
 """
 FK node for Koch v1.1 — Milestone 02
 
-Implements Standard (Craig) Denavit-Hartenberg forward kinematics
-derived from the student's hand-written DH frame assignment.
+Standard Denavit-Hartenberg forward kinematics, A_i = Rz(θ) Tz(d) Tx(a) Rx(α). The table below is the
+exact DH model of the simulated arm (derived and verified with "Milestone 04/derive_dh.py": it
+reproduces the simulator's end-effector pose to 1e-15 m). The real links are not straight (upper
+arm and forearm are tilted, the shoulder is offset sideways), so each joint has an offset θ0 and the
+chain is closed by a constant base frame and tool frame:
 
-DH Table:
-  Link | θᵢ  | dᵢ  | aᵢ  | αᵢ
-   1   |  q1  |  l1 |  0  | -π/2   base yaw   — rotates about world z
-   2   |  q2  |  0  |  l2 |   0    shoulder   — rotates about z1 (horizontal)
-   3   |  q3  |  0  |  l3 |   0    elbow      — rotates about z2
-   4   |  q4  |  0  |  0  | +π/2   wrist pitch— introduces the roll axis
-   5   |  q5  |  l5 |  0  |   0    wrist roll — EE offset along z4
+    T_ee(q) = T_base · A1(q1+θ0₁) · A2(q2+θ0₂) · A3(q3+θ0₃) · A4(q4+θ0₄) · A5(q5+θ0₅) · T_tool
 
-Link lengths (measured from MuJoCo simulation):
-  l1 = 0.049 m  — base to shoulder height (along world z)
-  l2 = 0.110 m  — upper arm  (shoulder → elbow)
-  l3 = 0.101 m  — forearm    (elbow → wrist)
-  l5 = 0.047 m  — wrist to EE offset (along z4)
+   i | θ0_i [deg] | d_i [m]  | a_i [m]  | α_i [deg]
+   1 |      0.00  | -0.05630 |  0       |  90   base yaw     (axis z0 = -z world)
+   2 |    -97.78  |  0       |  0.10931 | 180   shoulder     (upper arm)
+   3 |     80.68  |  0       |  0.10052 | 180   elbow        (forearm)
+   4 |    -91.54  | -0.00125 |  0       |  90   wrist pitch
+   5 |      0.00  | -0.04500 |  0       |   0   wrist roll   (end effector 45 mm from the pitch axis)
 
 ros2 run milestone_02 fk_node
   Subscribes : low_cost_robot_arm/joint_state  (sensor_msgs/JointState)
@@ -32,23 +30,28 @@ from geometry_msgs.msg import PoseStamped
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# DH link parameters (from the student's hand-derived DH table)
+# DH parameters (derived from the simulator model, see Milestone 04/derive_dh.py)
 # ──────────────────────────────────────────────────────────────────────────────
 
-_L1 = 0.049   # d1: base → shoulder height along world z  [m]
-_L2 = 0.110   # a2: upper-arm length, shoulder → elbow    [m]
-_L3 = 0.101   # a3: forearm length,   elbow → wrist       [m]
-_L5 = 0.047   # d5: wrist → EE offset along z4            [m]
-
-# Each row is (d, a, alpha); theta = q_i is added at runtime.
+# Each row is (θ0, d, a, α); θ = q_i + θ0 at runtime.
 # Order matches the joint_state topic: base_rotation, pitch, elbow, wrist_pitch, wrist_roll
 _DH_PARAMS = [
-    (_L1,  0.0,  -np.pi / 2),  # Link 1: d=l1, a=0,  α=−90°
-    ( 0.0, _L2,   0.0      ),  # Link 2: d=0,  a=l2, α=  0°
-    ( 0.0, _L3,   0.0      ),  # Link 3: d=0,  a=l3, α=  0°
-    ( 0.0,  0.0,  np.pi / 2),  # Link 4: d=0,  a=0,  α=+90°
-    (_L5,   0.0,  0.0      ),  # Link 5: d=l5, a=0,  α=  0°
+    ( 0.0,                 -0.0563,               0.0,                  np.pi / 2),  # 1 base yaw
+    (-1.7066124626924657,   0.0,                  0.109306587175705,    np.pi),      # 2 shoulder
+    ( 1.4081166309148654,   0.0,                  0.10051626664381245,  np.pi),      # 3 elbow
+    (-1.5976598867773588,  -0.001253,             0.0,                  np.pi / 2),  # 4 wrist pitch
+    ( 0.0,                 -0.045,                0.0,                  0.0),        # 5 wrist roll
 ]
+
+# constant frames: frame 0 in the world, and the end-effector frame in frame 5
+_T_BASE = np.array([[1.0, 0.0, 0.0, 0.012],
+                    [0.0, -1.0, 0.0, 0.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0]])
+_T_TOOL = np.array([[0.0, 0.0, -1.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0]])
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -88,7 +91,7 @@ def forward_kinematics(q: list) -> np.ndarray:
     """
     Compute the end-effector homogeneous transform via DH chain multiplication.
 
-        T_EE = ⁰T₁(q1) · ¹T₂(q2) · ²T₃(q3) · ³T₄(q4) · ⁴T₅(q5)
+        T_EE = T_base · ⁰T₁(q1+θ0₁) · ¹T₂(q2+θ0₂) · ²T₃(q3+θ0₃) · ³T₄(q4+θ0₄) · ⁴T₅(q5+θ0₅) · T_tool
 
     Parameters
     ----------
@@ -101,10 +104,10 @@ def forward_kinematics(q: list) -> np.ndarray:
         T[:3, 3]  → EE position [m]
         T[:3, :3] → EE rotation matrix
     """
-    T = np.eye(4)                                    # start from world frame
-    for (d, a, alpha), qi in zip(_DH_PARAMS, q):
-        T = T @ _dh_matrix(qi, d, a, alpha)          # chain each link transform
-    return T
+    T = _T_BASE.copy()                               # frame 0 in the world
+    for (theta0, d, a, alpha), qi in zip(_DH_PARAMS, q):
+        T = T @ _dh_matrix(qi + theta0, d, a, alpha)  # chain each link transform
+    return T @ _T_TOOL                               # end-effector frame
 
 
 def _rot_to_quat(R: np.ndarray):

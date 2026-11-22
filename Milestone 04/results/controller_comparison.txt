@@ -1,4 +1,4 @@
 plan duration 34.8 s, control period 4 ms
-position servo (built-in)    joint RMS [mrad] [51.0, 5.3, 33.1, 38.0, 17.0]  TCP RMS 7.19 mm  max 15.32 mm  sorted 3/3
+position servo (built-in)    joint RMS [mrad] [51.0, 5.3, 33.1, 38.0, 17.0]  TCP RMS 7.19 mm  max 15.31 mm  sorted 3/3
 PD + gravity compensation    joint RMS [mrad] [3.2, 1.0, 4.7, 7.3, 3.3]  TCP RMS 0.72 mm  max 1.67 mm  sorted 3/3
 computed torque              joint RMS [mrad] [0.1, 0.3, 0.3, 0.3, 0.2]  TCP RMS 0.14 mm  max 0.29 mm  sorted 3/3

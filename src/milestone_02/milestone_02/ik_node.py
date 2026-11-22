@@ -104,11 +104,13 @@ _LIMITS = [
 # Solver
 # ──────────────────────────────────────────────────────────────────────────────
 
-def inverse_kinematics(target: list,
-                       approach_pitch: float = 0.0,
-                       wrist_roll: float = 0.0):
+def geometric_inverse_kinematics(target: list,
+                                 approach_pitch: float = 0.0,
+                                 wrist_roll: float = 0.0,
+                                 quiet: bool = False):
     """
-    Compute joint angles that place the EE at target with the given approach.
+    Closed-form (geometric) inverse kinematics, used as the starting point of inverse_kinematics().
+    It treats the links as straight, so it is approximate (centimetre-level error).
 
     Parameters
     ----------
@@ -185,10 +187,92 @@ def inverse_kinematics(target: list,
     # Clamp any joint that exceeds its physical limit and warn the caller
     for i, (lo, hi) in enumerate(_LIMITS):
         if not (lo <= q[i] <= hi):
+            if not quiet:
+                print(f'  [WARN] joint {i+1} = {np.degrees(q[i]):.1f}° out of '
+                      f'[{np.degrees(lo):.0f}°, {np.degrees(hi):.0f}°] — clamped')
+            q[i] = float(np.clip(q[i], lo, hi))
+
+    return q
+
+
+def _refine(q_guess, target, approach_pitch, wrist_roll, tol=1e-10, max_iter=60):
+    """Newton / Levenberg-Marquardt polish of q1..q4 on the exact DH forward kinematics.
+
+    Residual e = [target - p_ee(q);  approach_pitch - (q2 + q3 + q4)]   (4 equations, 4 unknowns),
+    the wrist roll q5 is fixed. Returns the joint vector or None if it does not converge.
+    """
+    q = np.array(q_guess, float)
+    q[4] = wrist_roll
+    target = np.asarray(target, float)
+
+    def residual(v):
+        full = np.append(v, wrist_roll)
+        return np.hstack([target - forward_kinematics(full)[:3, 3], approach_pitch - (v[1] + v[2] + v[3])])
+
+    v = q[:4].copy()
+    h = 1e-6
+    for _ in range(max_iter):
+        e = residual(v)
+        if np.linalg.norm(e) < tol:
+            return np.append(v, wrist_roll)
+        J = np.zeros((4, 4))
+        for i in range(4):                               # numerical Jacobian of the residual
+            dv = np.zeros(4)
+            dv[i] = h
+            J[:, i] = -(residual(v + dv) - residual(v - dv)) / (2 * h)
+        v = v + np.linalg.solve(J.T @ J + 1e-12 * np.eye(4), J.T @ e)
+    e = residual(v)
+    return np.append(v, wrist_roll) if np.linalg.norm(e) < 1e-6 else None
+
+
+def inverse_kinematics(target: list,
+                       approach_pitch: float = 0.0,
+                       wrist_roll: float = 0.0):
+    """
+    Compute joint angles that place the EE at target with the given approach.
+
+    The closed-form geometric solution (straight-link model) gives the starting point, which is then
+    refined by Newton iterations on the exact DH forward kinematics, so the result reproduces the
+    target to ~1e-10 m.
+
+    Parameters
+    ----------
+    target         : [x, y, z] desired EE position in world frame [m]
+    approach_pitch : desired q2 + q3 + q4 [rad] (EE pitch from horizontal; 0 = level)
+    wrist_roll     : desired wrist roll angle [rad]
+
+    Returns
+    -------
+    List of 5 joint angles [q1, q2, q3, q4, q5] in radians, or None if the target cannot be reached.
+    Joint values outside limits are clamped with a warning printed.
+    """
+    x, y, z = target
+    yaw = np.arctan2(y, -x)
+    seeds = []
+    guess = geometric_inverse_kinematics(target, approach_pitch, wrist_roll, quiet=True)
+    if guess is not None:
+        seeds.append(guess)
+    for q2 in (-0.5, -0.2, -0.8, 0.2, -1.1, 0.5, -1.4):          # grid of elbow / shoulder starting points
+        for q3 in (0.8, 0.2, -0.3, 1.2, -0.9, 0.5, -1.4):
+            seeds.append([yaw, q2, q3, approach_pitch - q2 - q3, wrist_roll])
+
+    best = None
+    for seed in seeds:                                   # first converged solution that respects the joint limits
+        q = _refine(seed, target, approach_pitch, wrist_roll)
+        if q is None:
+            continue
+        inside = all(lo <= q[i] <= hi for i, (lo, hi) in enumerate(_LIMITS))
+        if inside:
+            return [float(v) for v in q]
+        best = q if best is None else best
+    if best is None:
+        return None
+    q = list(best)                                       # only solutions outside the limits exist: clamp and warn
+    for i, (lo, hi) in enumerate(_LIMITS):
+        if not (lo <= q[i] <= hi):
             print(f'  [WARN] joint {i+1} = {np.degrees(q[i]):.1f}° out of '
                   f'[{np.degrees(lo):.0f}°, {np.degrees(hi):.0f}°] — clamped')
             q[i] = float(np.clip(q[i], lo, hi))
-
     return q
 
 

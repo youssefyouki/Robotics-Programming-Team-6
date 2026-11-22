@@ -1,0 +1,10 @@
+Sorting cycle evaluation - servo
+samples: 14594  duration: 58.4 s (control period 4.0 ms)
+joint RMS error   [rad]: [0.0402, 0.0042, 0.0261, 0.03, 0.0134]
+joint max error   [rad]: [0.124, 0.0194, 0.112, 0.1233, 0.0834]
+TCP error  RMS 5.58 mm   max 15.02 mm
+command RMS (torque N*m or position rad): 0.577
+TASK-SPACE  validation (12 straight-line segments): worst deviation from the line 0.38 mm, worst end error 0.89 mm  (tol 3 mm)  PASS
+JOINT-SPACE validation (7 quintic segments): worst joint error 124.0 mrad, worst end error 3.4 mrad  (tol 30 mrad)  FAIL
+boxes in the bin of their colour: red=YES, green=YES, blue=YES
+SORTING SUCCESSFUL

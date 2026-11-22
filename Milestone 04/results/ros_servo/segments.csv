@@ -1,0 +1,20 @@
+phase,type,duration_s,max_error (mm for task-space deviation / mrad for joint-space),end_error (mm / mrad)
+approach,joint-space,2.68,123.276,2.985
+descend,task-space,1.0,0.26,0.547
+lift,task-space,1.0,0.256,0.529
+transfer,joint-space,1.5,120.617,3.445
+lower,task-space,0.8,0.375,0.785
+retreat,task-space,0.8,0.129,0.888
+approach,joint-space,2.1,123.745,3.169
+descend,task-space,1.0,0.286,0.526
+lift,task-space,1.0,0.223,0.51
+transfer,joint-space,2.34,123.662,3.04
+lower,task-space,0.8,0.261,0.765
+retreat,task-space,0.8,0.165,0.848
+approach,joint-space,1.7,124.012,3.012
+descend,task-space,1.0,0.362,0.514
+lift,task-space,1.0,0.213,0.518
+transfer,joint-space,4.0,123.338,3.227
+lower,task-space,0.8,0.263,0.818
+retreat,task-space,0.8,0.183,0.892
+home,joint-space,3.37,123.468,2.908

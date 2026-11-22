@@ -105,6 +105,7 @@ def joint_segment(q0, q1, T=None, v0=None, a0=None):
     a0 = np.zeros(5) if a0 is None else np.asarray(a0, float)
     if T is None:
         T = max(1.5, 1.875 * np.max(np.abs(q1 - q0)) / V_JOINT_MAX)
+    T = max(1, int(round(T / DT))) * DT          # whole number of time steps: the last sample is exactly t = T
     ts, n = _times(T)
     Q, Qd, Qdd = np.zeros((n, 5)), np.zeros((n, 5)), np.zeros((n, 5))
     for j in range(5):
@@ -118,17 +119,30 @@ def _min_jerk_s(tau):
     return 10 * tau**3 - 15 * tau**4 + 6 * tau**5
 
 
-def task_segment(q_start, p0, p1, T, roll, pitch=-np.pi / 2):
-    """Straight TCP line p0 -> p1 with the tool vertical. Returns q, qd, qdd (start excluded).
+def _min_jerk_derivs(tau, T):
+    """s(tau) and its first two time derivatives for the minimum-jerk blend over duration T."""
+    s = _min_jerk_s(tau)
+    ds = (30 * tau**2 - 60 * tau**3 + 30 * tau**4) / T
+    dds = (60 * tau - 180 * tau**2 + 120 * tau**3) / T**2
+    return s, ds, dds
 
-    q from IK at every sample; qd = J4^-1 v and qdd = J4^-1 (a - Jdot qd) for the 4 position/pitch
-    task rows (roll joint is held), evaluated with the analytic path derivatives.
+
+def task_segment(q_start, p0, p1, T, roll, pitch=-np.pi / 2):
+    """Straight TCP line p0 -> p1 with the tool at `pitch`. Returns q, qd, qdd (start excluded).
+
+    Path:  p(t) = p0 + s(t) (p1 - p0)  with the minimum-jerk blend s(t)  (analytic p', p'').
+    Joints: q from inverse kinematics at every sample (first four joints, roll held).
+    Task Jacobian J4 = d[p; pitch]/dq (4x4):
+        qd  = J4^-1 [p'; 0]
+        qdd = J4^-1 ([p''; 0] - J4' qd)        (J4' = directional derivative of J4 along qd)
     """
     p0, p1 = np.asarray(p0, float), np.asarray(p1, float)
+    T = max(1, int(round(T / DT))) * DT          # whole number of time steps
     ts, n = _times(T)
-    taus = np.concatenate([[0.0], ts / T])
-    s = _min_jerk_s(taus)
-    P = p0 + s[:, None] * (p1 - p0)
+    taus = np.clip(np.concatenate([[0.0], ts / T]), 0.0, 1.0)
+    s, ds, dds = _min_jerk_derivs(taus, T)
+    delta = p1 - p0
+    P = p0 + s[:, None] * delta
     Q = np.zeros((n + 1, 5))
     Q[0] = q_start
     for k in range(1, n + 1):
@@ -138,8 +152,15 @@ def task_segment(q_start, p0, p1, T, roll, pitch=-np.pi / 2):
         Q[k] = q
     if np.any(Q < K.JOINT_LIMITS[:, 0] - 1e-9) or np.any(Q > K.JOINT_LIMITS[:, 1] + 1e-9):
         raise PlanError("task-space segment violates a joint limit")
-    Qd = np.gradient(Q, DT, axis=0, edge_order=2)
-    Qdd = np.gradient(Qd, DT, axis=0, edge_order=2)
+    Qd, Qdd = np.zeros_like(Q), np.zeros_like(Q)
+    eps = 1e-6
+    for k in range(n + 1):
+        J = TK.task_jacobian4(Q[k])
+        qd4 = np.linalg.solve(J, np.hstack([ds[k] * delta, 0.0]))
+        qd5 = np.append(qd4, 0.0)
+        Jdot = (TK.task_jacobian4(Q[k] + eps * qd5) - TK.task_jacobian4(Q[k] - eps * qd5)) / (2 * eps)
+        Qd[k, :4] = qd4
+        Qdd[k, :4] = np.linalg.solve(J, np.hstack([dds[k] * delta, 0.0]) - Jdot @ qd4)
     return Q[1:], Qd[1:], Qdd[1:]
 
 
@@ -302,6 +323,78 @@ def plan_stop(q0, v0, a0, g0, T=0.4):
     b = _Builder(q0, g0, v0, a0)
     b.add("manual", None, *joint_segment(q0, q1, T, v0, a0))
     return b.finish()
+
+
+SIGNAL_KINDS = ("constant", "step", "sine", "square", "triangle", "chirp")
+
+
+def _ramp(t, duration):
+    """Smooth 0 -> 1 blend (minimum jerk) over `duration` seconds, 1 afterwards."""
+    return _min_jerk_s(np.clip(t / duration, 0.0, 1.0))
+
+
+def signal_samples(kind, t, amp, freq):
+    """Builder signals s(t) (radians), all starting at 0 smoothly:
+    constant  slow move to `amp` and hold          step     fast (0.15 s) move to `amp` and hold
+    sine      amp sin(2 pi f t)                    square   smoothed square wave (tanh edges)
+    triangle  band-limited triangle wave           chirp    sine sweeping 0.05 Hz -> `freq` over the run
+    Periodic signals fade in over max(0.5 s, one period) so the reference starts at rest."""
+    t = np.asarray(t, float)
+    w = 2 * np.pi * freq
+    fade = _ramp(t, max(0.5, 1.0 / max(freq, 1e-3)))
+    if kind == "constant":
+        return amp * _ramp(t, 1.0)
+    if kind == "step":
+        return amp * _ramp(t, 0.15)
+    if kind == "sine":
+        return amp * fade * np.sin(w * t)
+    if kind == "square":
+        return amp * fade * np.tanh(4 * np.sin(w * t)) / np.tanh(4)
+    if kind == "triangle":
+        series = sum((-1) ** k * np.sin((2 * k + 1) * w * t) / (2 * k + 1) ** 2 for k in range(6))
+        return amp * fade * 8 / np.pi**2 * series
+    if kind == "chirp":
+        T = max(t[-1], 1e-3)
+        f0 = 0.05
+        phase = 2 * np.pi * (f0 * t + (freq - f0) * t**2 / (2 * T))
+        return amp * fade * np.sin(phase)
+    raise PlanError(f"unknown signal '{kind}' (use {', '.join(SIGNAL_KINDS)})")
+
+
+def plan_signal(q0, v0, a0, joint, kind, amp, freq, duration, g0):
+    """Drive one joint with a builder signal around its current angle, then return to it smoothly."""
+    q0 = np.asarray(q0, float)
+    joint = int(joint)
+    if not 0 <= joint < 5:
+        raise PlanError("signal joint must be 1..5")
+    duration = float(np.clip(duration, 1.0, 60.0))
+    n = int(round(duration / DT))
+    t = np.arange(1, n + 1) * DT
+    sig = signal_samples(kind, t, float(amp), float(freq))
+    back = sig[-1] * (1.0 - _ramp(np.arange(1, int(round(1.0 / DT)) + 1) * DT, 1.0))        # 1 s return to the start angle
+    sig = np.concatenate([sig, back])
+
+    lo, hi = K.JOINT_LIMITS[joint]
+    room_up, room_down = hi - q0[joint], q0[joint] - lo
+    scale = 1.0
+    if sig.max() > room_up:
+        scale = min(scale, room_up / sig.max())
+    if sig.min() < -room_down:
+        scale = min(scale, room_down / -sig.min())
+    if scale < 1.0:
+        sig = sig * max(scale, 0.0)
+
+    Q = np.tile(q0, (len(sig), 1))
+    Q[:, joint] += sig
+    for k in range(0, len(Q), 25):                       # never drive the tool into the work surface
+        _check_height(TK.tcp_position(Q[k]))
+    Qd = np.gradient(np.vstack([q0, Q]), DT, axis=0, edge_order=2)[1:]
+    Qdd = np.gradient(Qd, DT, axis=0, edge_order=2)
+    b = _Builder(q0, g0, v0, a0)
+    b.add("manual", None, Q, Qd, Qdd)
+    plan = b.finish()
+    plan.scale = scale                                    # < 1 when the amplitude had to be reduced for the joint limits
+    return plan
 
 
 class Executor:

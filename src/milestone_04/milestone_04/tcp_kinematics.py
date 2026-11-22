@@ -53,23 +53,41 @@ def tool_pitch(q):
     return float(np.arctan2(a[2], a @ r_hat))
 
 
+def pitch_gradient(q):
+    """Analytic d(tool_pitch)/dq (5 joints). With a the tool axis, r the arm direction (-cos q1, sin q1, 0)
+    and pitch = atan2(a_z, a.r):  d pitch = (a_r da_z - a_z da_r) / (a_r^2 + a_z^2),  da/dq_i = w_i x a."""
+    _, axes, _, R = K._geometry(q)
+    a = R @ np.array([-1.0, 0.0, 0.0])
+    r = np.array([-np.cos(q[0]), np.sin(q[0]), 0.0])
+    dr = np.array([np.sin(q[0]), np.cos(q[0]), 0.0])
+    ar, az = a @ r, a[2]
+    g = np.zeros(K.N)
+    for i in range(K.N):
+        da = np.cross(axes[i], a)
+        dar = da @ r + (a @ dr if i == 0 else 0.0)
+        g[i] = (ar * da[2] - az * dar) / (ar * ar + az * az)
+    return g
+
+
+def task_jacobian4(q):
+    """4x4 Jacobian of [TCP position; tool pitch] with respect to the first four joints."""
+    J = np.zeros((4, 4))
+    J[:3] = tcp_jacobian(q)[:, :4]
+    J[3] = pitch_gradient(q)[:4]
+    return J
+
+
 def _wrap(x):
     return (x + np.pi) % (2 * np.pi) - np.pi
 
 
 def _solve(p_tcp, pitch, q, tol, max_iter, damping):
     lo, hi = K.JOINT_LIMITS[:, 0], K.JOINT_LIMITS[:, 1]
-    h = 1e-6
     for _ in range(max_iter):
         e = np.hstack([p_tcp - tcp_position(q), _wrap(pitch - tool_pitch(q))])
         if np.linalg.norm(e) < tol:
             return q, True
-        J = np.zeros((4, 4))
-        J[:3] = tcp_jacobian(q)[:, :4]
-        for i in range(4):
-            dq = np.zeros(5)
-            dq[i] = h
-            J[3, i] = (_wrap(tool_pitch(q + dq) - tool_pitch(q - dq))) / (2 * h)
+        J = task_jacobian4(q)
         step = np.linalg.solve(J.T @ J + damping**2 * np.eye(4), J.T @ e)
         q = q.copy()
         q[:4] = np.clip(q[:4] + step, lo[:4], hi[:4])

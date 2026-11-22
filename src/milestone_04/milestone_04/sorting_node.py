@@ -11,6 +11,8 @@ Streams the reference for every simulator state. What it plays depends on the la
                  (IK, joint-space quintic or straight line)    "roll": rad|null, "grip": rad, "linear": bool}
   jog            relative TCP step in the world frame         {"d": [dx,dy,dz]}
   gripper        move only the gripper                        {"value": rad}
+  signal         drive one joint with a builder signal        {"joint": 1..5, "kind": constant|step|sine|square|
+                 (the signal builder)                          triangle|chirp, "amp": rad, "freq": Hz, "duration": s}
   home           go to the home pose
   hold           decelerate smoothly and keep the pose
 
@@ -19,7 +21,8 @@ without jumps. With auto_start=true the sorting cycle starts by itself (headless
 
   Subscribes : m4/state, m4/boxes, m4/boxes_initial, m4/command
   Publishes  : m4/reference [t, q_ref, qd_ref, qdd_ref, gripper_ref, phase], m4/status (String),
-               m4/done (Bool, when the sorting cycle has finished)
+               m4/done (Bool, when the sorting cycle has finished),
+               m4/plan_path [n, (x, y, z, type) * n] - the planned tool-point path (latched, for the 3D view)
   Parameters : auto_start (bool), tail (s after the cycle before `done`)
 """
 import json
@@ -32,6 +35,7 @@ from std_msgs.msg import Bool, Float64MultiArray, String
 
 from milestone_03 import kinematics as K
 from milestone_04 import cell as C, planning as P, tcp_kinematics as TK, topics as T
+from milestone_04.monitor import TASK, JOINT
 
 
 class SortingNode(Node):
@@ -57,6 +61,7 @@ class SortingNode(Node):
         self.pub_ref = self.create_publisher(Float64MultiArray, T.REFERENCE, T.QOS_DEPTH)
         self.pub_status = self.create_publisher(String, T.STATUS, 10)
         self.pub_done = self.create_publisher(Bool, T.DONE, latched)
+        self.pub_path = self.create_publisher(Float64MultiArray, T.PLAN_PATH, latched)
         self.create_subscription(Float64MultiArray, T.BOXES_INITIAL, self._on_boxes, latched)
         self.create_subscription(Float64MultiArray, T.BOXES, self._on_boxes, 10)
         self.create_subscription(Float64MultiArray, T.STATE, self._on_state, T.QOS_DEPTH)
@@ -85,6 +90,7 @@ class SortingNode(Node):
             self.exec = P.Executor(q, grip_q)
             self.epoch, self.auto_end, self.goal_tcp, self.last_phase = epoch, None, None, None
             self.token += 1
+            self.pub_path.publish(T.pack([0]))
             if not first:
                 self._status("simulation reset - holding the home pose")
         if self.auto_pending and self.boxes is not None:
@@ -100,6 +106,7 @@ class SortingNode(Node):
                     self._status(f"planning failed: {result}", "warn")
                 else:
                     self.exec.set_plan(result, self.t_now)
+                    self._publish_path(result)
                     self.auto_end = self.t_now + result.duration
                     self.done_sent = False
                     self._status(f"sorting plan ready: {result.duration:.1f} s")
@@ -123,6 +130,17 @@ class SortingNode(Node):
 
     def _on_command(self, msg):
         self.pending_commands.append(msg.data)       # handled on the next state (same time base)
+
+    def _publish_path(self, plan):
+        """Tool-point path of the plan: type 0 joint-space move, 1 task-space line, 2 manual move, 3 dwell."""
+        types = np.full(len(plan), 3)
+        for name, i0, i1, _ in plan.segments:
+            types[i0:i1 + 1] = 1 if name in TASK else (0 if name in JOINT else (2 if name == "manual" else 3))
+        idx = np.unique(np.append(np.arange(0, len(plan), max(1, len(plan) // 1500)), len(plan) - 1))
+        flat = []
+        for k in idx:
+            flat += [*TK.tcp_position(plan.q[k]), types[k]]
+        self.pub_path.publish(T.pack([len(idx), *flat]))
 
     # ------------------------------------------------------------------ commands
     def _handle(self, raw):
@@ -159,6 +177,11 @@ class SortingNode(Node):
                 plan = P.plan_tcp_goto(q0, v0, a0, target, TK.tool_pitch(q0), q0[4], g0, g0,
                                        cmd.get("T", 0.6))
                 self.goal_tcp = target
+            elif name == "signal":
+                plan = P.plan_signal(q0, v0, a0, int(cmd["joint"]) - 1, cmd["kind"], cmd["amp"], cmd.get("freq", 0.5),
+                                     cmd.get("duration", 10.0), g0)
+                if getattr(plan, "scale", 1.0) < 1.0:
+                    self._status(f"amplitude reduced to {plan.scale * 100:.0f}% to stay inside the joint limits", "warn")
             elif name == "home":
                 q_home = P.home_pose(q0)
                 plan = P.plan_joint_goto(q0, v0, a0, q_home, g0, g0)
@@ -169,6 +192,7 @@ class SortingNode(Node):
             self._status(f"cannot do that: {exc}", "warn")
             return
         self.exec.set_plan(plan, self.t_now)
+        self._publish_path(plan)
         self._status(f"manual: {name}")
 
     def _start_sorting(self):

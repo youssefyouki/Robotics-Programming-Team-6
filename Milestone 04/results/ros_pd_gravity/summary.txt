@@ -1,0 +1,10 @@
+Sorting cycle evaluation - pd_gravity
+samples: 14286  duration: 57.1 s (control period 4.0 ms)
+joint RMS error   [rad]: [0.0026, 0.0008, 0.0038, 0.0058, 0.0027]
+joint max error   [rad]: [0.0097, 0.0031, 0.0151, 0.0202, 0.0165]
+TCP error  RMS 0.54 mm   max 1.55 mm
+command RMS (torque N*m or position rad): 0.577
+TASK-SPACE  validation (12 straight-line segments): worst deviation from the line 1.00 mm, worst end error 1.50 mm  (tol 3 mm)  PASS
+JOINT-SPACE validation (7 quintic segments): worst joint error 19.5 mrad, worst end error 14.1 mrad  (tol 30 mrad)  PASS
+boxes in the bin of their colour: red=YES, green=YES, blue=YES
+SORTING SUCCESSFUL

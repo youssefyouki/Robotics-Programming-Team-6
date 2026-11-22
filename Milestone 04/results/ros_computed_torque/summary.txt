@@ -1,0 +1,10 @@
+Sorting cycle evaluation - computed_torque
+samples: 14045  duration: 56.2 s (control period 4.0 ms)
+joint RMS error   [rad]: [0.0001, 0.0003, 0.0003, 0.0002, 0.0002]
+joint max error   [rad]: [0.0004, 0.0008, 0.0008, 0.0008, 0.0005]
+TCP error  RMS 0.04 mm   max 0.17 mm
+command RMS (torque N*m or position rad): 0.577
+TASK-SPACE  validation (12 straight-line segments): worst deviation from the line 0.06 mm, worst end error 0.06 mm  (tol 3 mm)  PASS
+JOINT-SPACE validation (7 quintic segments): worst joint error 0.8 mrad, worst end error 0.8 mrad  (tol 30 mrad)  PASS
+boxes in the bin of their colour: red=YES, green=YES, blue=YES
+SORTING SUCCESSFUL

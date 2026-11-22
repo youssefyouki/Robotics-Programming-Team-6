@@ -6,15 +6,17 @@ Keeps its own copy of the model, takes the joint positions the simulator publish
 scene offscreen at the size of the panel's view (anti-aliased) and streams it as JPEG. Running in
 its own process, rendering never competes with the simulation or the controller.
 
-  Subscribes : m4/view_state [t, qpos...], m4/camera (JSON: rotate | pan | zoom | reset | resize)
+  Subscribes : m4/view_state [t, qpos...], m4/plan_path (planned tool-point path to draw),
+               m4/camera (JSON: rotate | pan | zoom | reset | resize | fps | overlay)
   Publishes  : m4/image (sensor_msgs/CompressedImage, JPEG)
   Parameters : image_fps, image_width, image_height (initial), max_image_width, max_image_height
 """
 import json
 import mujoco
+import numpy as np
 import rclpy
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, qos_profile_sensor_data
 from sensor_msgs.msg import CompressedImage
 from std_msgs.msg import Float64MultiArray, String
 
@@ -44,10 +46,17 @@ class ViewNode(Node):
         self.streamer.start()
         self.create_subscription(Float64MultiArray, T.VIEW_STATE, self._on_state, qos_profile_sensor_data)
         self.create_subscription(String, T.CAMERA, self._on_camera, 50)
+        latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                             reliability=ReliabilityPolicy.RELIABLE)
+        self.create_subscription(Float64MultiArray, T.PLAN_PATH, self._on_path, latched)
         self.get_logger().info("View node ready.")
 
     def _on_state(self, msg):
         self.streamer.snapshot(msg.data[1:], msg.data[0])
+
+    def _on_path(self, msg):
+        n = int(msg.data[0])
+        self.streamer.set_path(np.array(msg.data[1:1 + 4 * n]) if n else [])
 
     def _on_camera(self, msg):
         try:

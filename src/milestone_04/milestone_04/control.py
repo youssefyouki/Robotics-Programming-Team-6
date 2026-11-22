@@ -66,6 +66,12 @@ class _Dynamics:
 class ServoController:
     kind = "position"
     name = "servo"
+    label = "Position servo (built-in)"
+
+    def describe(self):
+        return {"name": self.name, "label": self.label, "kind": self.kind,
+                "law": "u = q_ref   (set-point of the joint servo)\nservo torque: tau = kp (q_ref - q) - kv qd,  kp = 100, kv = 10",
+                "gains": "kp = 100, kv = 10 (per joint, in the model)"}
 
     def __call__(self, q, qd, q_ref, qd_ref, qdd_ref, grip_q=0.0):
         return np.asarray(q_ref, float).copy()
@@ -74,6 +80,12 @@ class ServoController:
 class PDGravityController:
     kind = "torque"
     name = "pd_gravity"
+    label = "PD + gravity compensation"
+
+    def describe(self):
+        return {"name": self.name, "label": self.label, "kind": self.kind,
+                "law": "tau = Kp e + Kd ed + g(q) + friction feed-forward\ne = q_ref - q,  ed = qd_ref - qd",
+                "gains": f"Kp = {self.kp.astype(int).tolist()}, Kd = {self.kd.astype(int).tolist()}"}
 
     def __init__(self, kp=(110, 110, 110, 70, 45), kd=(16, 16, 16, 11, 8), friction_ff=True):
         self.kp, self.kd = np.array(kp, float), np.array(kd, float)
@@ -92,6 +104,12 @@ class PDGravityController:
 class ComputedTorqueController:
     kind = "torque"
     name = "computed_torque"
+    label = "Computed torque"
+
+    def describe(self):
+        return {"name": self.name, "label": self.label, "kind": self.kind,
+                "law": "tau = M(q) (qdd_ref + Kd ed + Kp e) + h(q, qd) + friction feed-forward\nerror dynamics: e'' + Kd e' + Kp e = 0",
+                "gains": f"wn = {np.sqrt(self.kp).astype(int).tolist()} rad/s (critically damped)"}
 
     def __init__(self, wn=(22, 22, 22, 22, 22), friction_ff=True):
         wn = np.array(wn, float)

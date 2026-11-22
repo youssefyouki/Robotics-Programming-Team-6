@@ -4,14 +4,19 @@ Evaluation node for the sorting cycle (Milestone 04).
 
 Records state, reference, actuator command and box poses. When the planner reports `done` it
 writes to `output_dir`:
-  summary.txt           joint / TCP tracking errors, torques, boxes sorted, cycle time
+  summary.txt           joint / TCP tracking errors, torques, boxes sorted, cycle time, and the
+                        validation of the task-space segments (straight lines) and the joint-space
+                        segments (quintic moves) against the simulator
+  segments.csv          one row per segment: phase, duration, line deviation / joint error, end error
   joint_tracking.png    reference vs measured joints and tracking error (phases shaded)
   tcp_tracking.png      TCP error over time and the TCP path
   results.npz           raw logs
 Exit code 0 only if every box ended in the bin of its colour.
 
   Subscribes : m4/state, m4/reference, m4/actuator_cmd, m4/boxes, m4/status, m4/done
-  Parameters : output_dir (str), controller (str, label only), max_wait (s, 0 = unlimited)
+  Parameters : output_dir (str), controller (str, label only), max_wait (s, 0 = unlimited),
+               tol_task_mm (max deviation of the measured TCP from the commanded straight line),
+               tol_joint_rad (max joint tracking error on the joint-space moves)
 """
 import os
 import sys
@@ -32,6 +37,8 @@ class EvaluationNode(Node):
         self.declare_parameter("output_dir", "milestone_04_results")
         self.declare_parameter("controller", "")
         self.declare_parameter("max_wait", 0.0)
+        self.declare_parameter("tol_task_mm", 3.0)
+        self.declare_parameter("tol_joint_rad", 0.03)
         self.state, self.ref, self.cmd, self.boxes, self.phases = {}, {}, {}, [], []
         self.done_at = None
         self.started = time.time()
@@ -84,6 +91,38 @@ class EvaluationNode(Node):
         tcp_ref = np.array([TK.tcp_position(x) for x in q_ref])
         tcp_err = np.linalg.norm(tcp - tcp_ref, axis=1) * 1000
 
+        # ---- validation per segment type: task-space lines and joint-space quintic moves
+        TASK = ("descend", "lift", "lower", "retreat")
+        JOINT = ("approach", "transfer", "home")
+        names = [T.PHASES[int(i)] for i in R[:, 17]]
+        runs, start = [], 0
+        for i in range(1, len(t) + 1):
+            if i == len(t) or names[i] != names[start]:
+                runs.append((names[start], start, i - 1))
+                start = i
+        rows, line_dev, task_end, joint_max, joint_end = [], [], [], [], []
+        for name, i0, i1 in runs:
+            dur = t[i1] - t[i0]
+            if name in TASK:
+                p0, p1 = tcp_ref[i0], tcp_ref[i1]
+                L = np.linalg.norm(p1 - p0)
+                if L < 1e-6:
+                    continue
+                u = (p1 - p0) / L
+                rel = tcp[i0:i1 + 1] - p0
+                dev = np.linalg.norm(rel - np.outer(rel @ u, u), axis=1).max() * 1000
+                end = np.linalg.norm(tcp[i1] - tcp_ref[i1]) * 1000
+                line_dev.append(dev); task_end.append(end)
+                rows.append((name, "task-space", round(dur, 2), round(dev, 3), round(end, 3)))
+            elif name in JOINT:
+                err = np.abs(e[i0:i1 + 1]).max()
+                end = np.abs(e[i1]).max()
+                joint_max.append(err); joint_end.append(end)
+                rows.append((name, "joint-space", round(dur, 2), round(err * 1000, 3), round(end * 1000, 3)))
+        tol_t, tol_j = self.get_parameter("tol_task_mm").value, self.get_parameter("tol_joint_rad").value
+        task_ok = bool(line_dev) and max(line_dev) < tol_t
+        joint_ok = bool(joint_max) and max(joint_max) < tol_j
+
         last = np.array(self.boxes[-1][1:]).reshape(3, 5)
         sorted_flags = {c: bool(last[i, 4]) for i, c in enumerate(C.COLORS)}
         ok = all(sorted_flags.values())
@@ -95,12 +134,22 @@ class EvaluationNode(Node):
                  f"joint max error   [rad]: {np.round(np.abs(e).max(0), 4).tolist()}",
                  f"TCP error  RMS {np.sqrt((tcp_err**2).mean()):.2f} mm   max {tcp_err.max():.2f} mm",
                  f"command RMS (torque N*m or position rad): {np.round(np.sqrt((u**2).mean(0)), 3).tolist()}",
+                 f"TASK-SPACE  validation ({len(line_dev)} straight-line segments): worst deviation from the line "
+                 f"{max(line_dev):.2f} mm, worst end error {max(task_end):.2f} mm  (tol {tol_t:g} mm)  "
+                 f"{'PASS' if task_ok else 'FAIL'}",
+                 f"JOINT-SPACE validation ({len(joint_max)} quintic segments): worst joint error "
+                 f"{max(joint_max) * 1000:.1f} mrad, worst end error {max(joint_end) * 1000:.1f} mrad  "
+                 f"(tol {tol_j * 1000:g} mrad)  {'PASS' if joint_ok else 'FAIL'}",
                  "boxes in the bin of their colour: " + ", ".join(f"{c}={'YES' if v else 'NO'}" for c, v in sorted_flags.items()),
                  "SORTING SUCCESSFUL" if ok else "SORTING FAILED"]
         text = "\n".join(lines)
         print("\n" + text)
         with open(os.path.join(out, "summary.txt"), "w") as f:
             f.write(text + "\n")
+        with open(os.path.join(out, "segments.csv"), "w") as f:
+            f.write("phase,type,duration_s,max_error (mm for task-space deviation / mrad for joint-space),end_error (mm / mrad)\n")
+            for r in rows:
+                f.write(",".join(str(x) for x in r) + "\n")
         np.savez(os.path.join(out, "results.npz"), t=t, q=q, qd=qd, q_ref=q_ref, qd_ref=qd_ref,
                  u=u, tcp=tcp, tcp_ref=tcp_ref, grip=gq, grip_ref=g_ref)
         self._plots(out, t, q, q_ref, e, tcp, tcp_ref, tcp_err, label)
