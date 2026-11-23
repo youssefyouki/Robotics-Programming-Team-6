@@ -19,10 +19,10 @@ def evaluate_boxes(model, data):
     return {c: C.box_in_bin(p, c) for c, (p, _) in poses.items()}, poses
 
 
-def simulate(controller_name, plan=None, tail=1.5, callback=None, verbose=False):
+def simulate(controller_name, plan=None, tail=1.5, callback=None, verbose=False, offscreen=None):
     """callback(model, data, k, segment_name) is called once per control tick (e.g. to render frames)."""
     ctrl = control.make_controller(controller_name)
-    model, data = C.load_cell(actuation=ctrl.kind)
+    model, data = C.load_cell(actuation=ctrl.kind, offscreen=offscreen)
     C.reset_to_home(model, data)
     tcp_site = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, "tcp")
     if plan is None:
