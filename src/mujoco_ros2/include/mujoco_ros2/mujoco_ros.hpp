@@ -56,6 +56,9 @@ class MuJoCoROS: public rclcpp::Node
         std::vector<double> _torqueInput;                                                           ///< Used to store joint commands in torque mode
         
         ControlMode _controlMode;                                                                   ///< POSITION, VELOCITY, or TORQUE
+        bool _torquePassthrough = false;                                                            ///< TORQUE mode: commands are joint torques [Nm], applied exactly (actuator law inverted) and held until the next message; no bias / damping added
+        bool _torqueReceived = false;                                                               ///< True once the first torque command has arrived (until then the arm holds its initial pose)
+        std::vector<double> _holdTarget;                                                            ///< Initial joint positions, held by the actuators' own servo law until the first torque command arrives
         
         mjModel *_model;                                                                            ///< Underlying model of the robot.
         mjData  *_jointState;                                                                       ///< Joint state data (position, velocity, acceleration)

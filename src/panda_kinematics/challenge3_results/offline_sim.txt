@@ -1,0 +1,13 @@
+errors in degrees over the planned motion, latency 8 ms
+
+model + FLC (submitted controller)             rms   0.65  max   6.14 | after start-up rms   0.40 max   1.01
+model only (no FLC)                            rms  28.67  max  83.61 | after start-up rms  33.46 max  83.61
+FLC only (no model)                            rms   5.37  max  31.80 | after start-up rms   6.20 max  31.80
+decoupled inertia (diagonal M) + FLC           rms   0.74  max   6.14 | after start-up rms   0.53 max   1.36
+no Coriolis term + FLC                         rms   0.68  max   6.14 | after start-up rms   0.46 max   1.14
+gravity only + FLC                             rms   2.80  max  18.41 | after start-up rms   3.18 max  18.41
+
+Why does the model alone drift? the unmodelled joint damping of panda.xml (1 Nms/rad):
+model only, perfect start                      rms  28.59  max  83.84 | after start-up rms  33.40 max  83.84
+model + damping term, perfect start (no FLC)   rms   1.06  max   2.61 | after start-up rms   1.16 max   2.61
+model + damping term, 8 ms latency (no FLC)    rms   1.79  max   6.33 | after start-up rms   2.04 max   6.33

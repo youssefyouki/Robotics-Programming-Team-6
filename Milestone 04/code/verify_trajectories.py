@@ -11,13 +11,13 @@ Checks the mathematics of the plan used by the sorting cycle:
   D  whole plan: joint limits, q / qd / qdd consistency (qd = dq/dt, qdd = dqd/dt), reference
      continuity at every segment junction, every grasp/drop target reached
 
-Run:  .venv/bin/python "Milestone 04/verify_trajectories.py"      -> results/trajectory_verification.txt
+Run:  .venv/bin/python "Milestone 04/code/verify_trajectories.py"      -> results/trajectory_verification.txt
 """
 import os
 import sys
 import numpy as np
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src")
 sys.path.insert(0, os.path.join(ROOT, "milestone_03"))
 sys.path.insert(0, os.path.join(ROOT, "milestone_04"))
 from milestone_03 import kinematics as K

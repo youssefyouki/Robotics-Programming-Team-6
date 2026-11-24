@@ -8,7 +8,7 @@ Starts the simulator, planner and controller nodes (headless, fast) and checks t
   3. switching controllers in the middle of the sorting cycle does not break it,
   4. every finished trajectory segment is validated (task-space and joint-space).
 
-Run (ROS sourced):   python3 "Milestone 04/test_controller_switch.py"
+Run (ROS sourced):   python3 "Milestone 04/code/test_controller_switch.py"
 """
 import json
 import os

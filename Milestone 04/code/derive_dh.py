@@ -13,13 +13,13 @@ constant base frame and a constant tool frame:
 
       T_ee(q) = T_base  A_1(q1 + th0_1) A_2(q2 + th0_2) ... A_5(q5 + th0_5)  T_tool
 
-Run:  .venv/bin/python "Milestone 04/derive_dh.py"
+Run:  .venv/bin/python "Milestone 04/code/derive_dh.py"
 """
 import os
 import sys
 import numpy as np
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "milestone_03"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src", "milestone_03"))
 from milestone_03 import kinematics as K
 
 

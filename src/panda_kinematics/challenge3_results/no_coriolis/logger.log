@@ -1,0 +1,13 @@
+[INFO] [1795469410.416332910] [control_logger]: logging 562 torque commands (412 planned samples)
+[INFO] [1795469418.736875031] [control_logger]: publish rate achieved: 99 Hz (target 100)
+[INFO] [1795469418.737481636] [control_logger]: motion duration: 1.11 s; fastest joint at 95 % of its speed limit
+[INFO] [1795469418.738020056] [control_logger]: inertial+Coriolis / gravity torque (norm over joints): mean 1.11, max 4.09
+[INFO] [1795469418.738529825] [control_logger]: tracking error (all joints): rms 0.60 deg, max 6.13 deg
+[INFO] [1795469418.739035757] [control_logger]: tracking error after the first 0.3 s: rms 0.34 deg, max 0.87 deg
+[INFO] [1795469418.739539001] [control_logger]: per-joint rms error [deg]: [0.18 0.42 0.2  0.43 0.42 1.34 0.31]
+[INFO] [1795469418.740031109] [control_logger]: per-joint rms error after start-up [deg]: [0.2  0.45 0.21 0.37 0.49 0.06 0.36]
+[INFO] [1795469418.740530864] [control_logger]: hand position error: rms 9.1 mm, max 20.5 mm
+[INFO] [1795469418.741032262] [control_logger]: final joint error vs goal [deg]: [-1.93e-02  1.04e-01 -9.29e-03 -4.39e-02  3.23e-03 -3.30e-03 -8.16e-05]
+[INFO] [1795469418.741534085] [control_logger]: residual joint speed at the end of the recording: 0.001 rad/s
+[INFO] [1795469418.742036252] [control_logger]: peak commanded torque: 77 % of the actuator limit; largest torque step between commands 12.6 Nm
+[INFO] [1795469419.132039403] [control_logger]: results saved to /home/youssef/Robo_arm/src/panda_kinematics/challenge3_results/no_coriolis

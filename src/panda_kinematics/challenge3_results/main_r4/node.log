@@ -1,0 +1,21 @@
+[INFO] [1795469328.590662579] [controller_node]: Trajectory generated. Starting Controller.
+Traceback (most recent call last):
+  File "/tmp/tmp36sp83hf_controller_node.py", line 582, in <module>
+    main()
+  File "/tmp/tmp36sp83hf_controller_node.py", line 577, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 778, in _wait_for_ready_callbacks
+    waitable.add_to_wait_set(wait_set)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/event_handler.py", line 124, in add_to_wait_set
+    with self.__event:
+KeyboardInterrupt

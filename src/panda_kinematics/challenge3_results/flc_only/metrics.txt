@@ -1,0 +1,11 @@
+publish rate achieved: 100 Hz (target 100)
+motion duration: 1.11 s; fastest joint at 95 % of its speed limit
+inertial+Coriolis / gravity torque (norm over joints): mean 1.11, max 4.09
+tracking error (all joints): rms 5.13 deg, max 28.18 deg
+tracking error after the first 0.3 s: rms 5.91 deg, max 28.18 deg
+per-joint rms error [deg]: [ 0.48 13.24  0.78  1.36  0.92  2.18  0.66]
+per-joint rms error after start-up [deg]: [ 0.55 15.39  0.91  1.52  1.05  1.58  0.74]
+hand position error: rms 172.3 mm, max 411.3 mm
+final joint error vs goal [deg]: [-1.25e+00 -3.76e+01  1.32e+00  1.65e+01 -1.21e-01  3.11e-01 -1.21e-02]
+residual joint speed at the end of the recording: 0.018 rad/s
+peak commanded torque: 56 % of the actuator limit; largest torque step between commands 6.7 Nm

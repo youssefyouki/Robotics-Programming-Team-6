@@ -2,7 +2,7 @@
 """
 Milestone 04 - render the sorting cycle to an MP4 (offscreen, no window, no ROS).
 
-Run:  MUJOCO_GL=egl .venv/bin/python "Milestone 04/make_video.py" [controller] [out.mp4]
+Run:  MUJOCO_GL=egl .venv/bin/python "Milestone 04/code/make_video.py" [controller] [out.mp4]
 """
 import os
 import sys
@@ -10,7 +10,7 @@ import cv2
 import numpy as np
 import mujoco
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src")
 sys.path.insert(0, os.path.join(ROOT, "milestone_03"))
 sys.path.insert(0, os.path.join(ROOT, "milestone_04"))
 from milestone_04 import offline

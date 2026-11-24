@@ -31,6 +31,8 @@ setup(
             'trajectory_node = panda_kinematics.trajectory_node:main',
             'trajectory_experiment = panda_kinematics.trajectory_experiment:main',
             'tracking_logger = panda_kinematics.tracking_logger:main',
+            'controller_node = panda_kinematics.controller_node:main',
+            'control_logger = panda_kinematics.control_logger:main',
         ],
     },
 )

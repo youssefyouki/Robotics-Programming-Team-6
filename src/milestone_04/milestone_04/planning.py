@@ -310,10 +310,22 @@ def plan_tcp_goto(q0, v0, a0, p, pitch, roll, g0, g1, T=None, linear=False):
         T = T or max(1.0, 1.875 * np.linalg.norm(np.asarray(p) - p0) / 0.08)
         b.add("manual", None, *task_segment(q0, p0, p, T, q0[4], TK.tool_pitch(q0)), grip_to=g1)
     else:
-        q1, ok = TK.inverse_pose(p, pitch=pitch, roll=roll, q0=q0)
+        note = None
+        for d in np.radians(np.arange(0, 95, 15)):                    # requested pitch first, then the nearest ones
+            for sign in ((1,) if d == 0 else (1, -1)):
+                q1, ok = TK.inverse_pose(p, pitch=pitch + sign * d, roll=roll, q0=q0, max_iter=40 if d else 100)
+                if ok:
+                    if d > 0:
+                        note = f"tool pitch {np.degrees(pitch):.0f} deg is not reachable there, using {np.degrees(pitch + sign * d):.0f} deg"
+                    break
+            if ok:
+                break
         if not ok:
-            raise PlanError(f"TCP {np.round(p, 3)} m is not reachable with tool pitch {np.degrees(pitch):.0f} deg")
+            raise PlanError(f"TCP {np.round(p, 3)} m is not reachable (check the position)")
         b.add("manual", None, *joint_segment(q0, q1, T, v0, a0), grip_to=g1)
+        plan = b.finish()
+        plan.note = note
+        return plan
     return b.finish()
 
 

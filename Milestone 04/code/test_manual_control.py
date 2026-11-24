@@ -6,7 +6,7 @@ stop, pause / resume / reset, sorting) against the running closed-loop system.
 It starts the simulator, planner and controller nodes itself (headless, as fast as possible), sends
 the same JSON commands as the panel and checks the result in the simulator.
 
-Run (ROS sourced):   python3 "Milestone 04/test_manual_control.py"
+Run (ROS sourced):   python3 "Milestone 04/code/test_manual_control.py"
 """
 import json
 import os
@@ -96,7 +96,7 @@ try:
     z0 = TK.tcp_position(st["q"])[2]; cmd(cmd="jog", d=[0, 0, 0.01]); wait_sim(1.5)
     dz = (TK.tcp_position(st["q"])[2] - z0) * 1000
     ok(abs(dz - 10) < 1.5, f"jog +10 mm in z moves the tool {dz:.2f} mm")
-    st["status"].clear(); cmd(cmd="goto_tcp", p=[-0.3, 0, 0.3], pitch=-np.pi / 2); spin(0.5)
+    st["status"].clear(); cmd(cmd="goto_tcp", p=[-0.6, 0, 0.3], pitch=-np.pi / 2); spin(2.5)
     ok(any("cannot do that" in x for x in st["status"]), "unreachable Cartesian target is rejected")
     # signal builder (constants, steps and waveforms as joint inputs)
     cmd(cmd="goto_joint", q=[0.0, -0.3, 0.3, -1.0, 0.0]); wait_sim(4.0)

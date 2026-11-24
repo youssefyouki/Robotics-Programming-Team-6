@@ -17,6 +17,7 @@
  */
  
 #include <mujoco_ros2/mujoco_ros.hpp>
+#include <algorithm>
 
   ////////////////////////////////////////////////////////////////////////////////////////////////////
  //                                         Constructor                                            //
@@ -29,15 +30,18 @@ MuJoCoROS::MuJoCoROS(const std::string &xmlLocation, const std::string &nodeName
     std::string controlMode           = this->declare_parameter<std::string>("control_mode", "TORQUE");
     _simFrequency                     = this->declare_parameter<int>("simulation_frequency", 1000);
     int visualisationFrequency        = this->declare_parameter<int>("visualisation_frequency", 20);
+    _torquePassthrough                = this->declare_parameter<bool>("torque_passthrough", false);   // true: raw torque commands, held until the next message
 
     // Load the robot model     
     char errorMessage[1000] = "Could not load model.";                                              // We need this as an input argument.   
     _model = mj_loadXML(xmlLocation.c_str(), nullptr, errorMessage, 1000);                          // Try to load the model  
     if (not _model) throw std::runtime_error("[ERROR] [MuJoCo NODE] Problem loading model: " + std::string(errorMessage)); 
     _model->opt.timestep = 1/((double)_simFrequency);                                               // Match MuJoCo to node frequency
+    if (_torquePassthrough) _model->opt.integrator = mjINT_EULER;                                   // Implicit integrators would treat the servo's velocity gain as extra inertia (+kv*dt); plain Euler does not
     
      // Resize arrays based on the number of joints in the model
     _jointState = mj_makeData(_model);                                                              // Initialize joint state
+    _holdTarget.assign(_jointState->qpos, _jointState->qpos + _model->nq);                          // Remember the initial pose (used by the torque passthrough before the first command)
     _jointStateMessage.name.resize(_model->nq);
     _jointStateMessage.position.resize(_model->nq);
     _jointStateMessage.velocity.resize(_model->nq);
@@ -128,13 +132,42 @@ void MuJoCoROS::update_simulation()
 
     if (_controlMode == TORQUE)
     {
-        for (int i = 0; i < _model->nq; ++i)
+        const int n = std::min(_model->nq, _model->nu);                                             // Never write past the end of ctrl (the Panda has 9 joints but 8 actuators)
+        for (int i = 0; i < n; ++i)
         {
-            _jointState->ctrl[i] = _torqueInput[i]                                                  // Transfer torque input
-                                 + _jointState->qfrc_bias[i]                                        // Compensate for gravity
-                                 - 0.01*_jointState->qvel[i];                                       // Add some damping
-                                 
-            _torqueInput[i] = 0.0;                                                                  // Clear value
+            if (_torquePassthrough)
+            {
+                // The Panda's actuators are position servos:  force = gain*ctrl + bias0 + bias1*q + bias2*qdot.
+                // To make the actuator produce exactly the commanded torque we invert that law with the model's
+                // own gain / bias numbers:  ctrl = (torque - bias) / gain.  (The model itself is not modified.)
+                if (not _torqueReceived and _model->actuator_trntype[i] == mjTRN_JOINT)
+                {
+                    // No torque command yet: let the actuator's own servo law hold the initial pose, so the arm does not collapse before the controller starts
+                    _jointState->ctrl[i] = _holdTarget[_model->jnt_qposadr[_model->actuator_trnid[2*i]]];
+                    continue;
+                }
+                const double tau = _torqueInput[i];                                                 // Commanded joint torque, held until the next command arrives
+                if (_model->actuator_trntype[i] == mjTRN_JOINT
+                 && _model->actuator_gaintype[i] == mjGAIN_FIXED
+                 && _model->actuator_biastype[i] == mjBIAS_AFFINE
+                 && _model->actuator_gainprm[mjNGAIN*i] != 0.0)
+                {
+                    const int joint = _model->actuator_trnid[2*i];
+                    const double q  = _jointState->qpos[_model->jnt_qposadr[joint]];
+                    const double dq = _jointState->qvel[_model->jnt_dofadr[joint]];
+                    const double *bias = &_model->actuator_biasprm[mjNBIAS*i];
+                    _jointState->ctrl[i] = (tau - (bias[0] + bias[1]*q + bias[2]*dq)) / _model->actuator_gainprm[mjNGAIN*i];
+                }
+                else _jointState->ctrl[i] = tau;                                                    // e.g. the tendon-driven gripper: pass the value straight through
+            }
+            else
+            {
+                _jointState->ctrl[i] = _torqueInput[i]                                              // Transfer torque input
+                                     + _jointState->qfrc_bias[i]                                    // Compensate for gravity
+                                     - 0.01*_jointState->qvel[i];                                   // Add some damping
+
+                _torqueInput[i] = 0.0;                                                              // Clear value
+            }
         }
     }
 
@@ -171,7 +204,7 @@ MuJoCoROS::joint_command_callback(const std_msgs::msg::Float64MultiArray::Shared
         {
             case POSITION:
             {
-                for(int i = 0; i < _model->nq; ++i)
+                for(int i = 0; i < std::min(_model->nq, _model->nu); ++i)
                 {
                     _jointState->ctrl[i] = msg->data[i];                                            // Assign control input directly
                 }
@@ -179,7 +212,7 @@ MuJoCoROS::joint_command_callback(const std_msgs::msg::Float64MultiArray::Shared
             }
             case VELOCITY:
             {
-                for(int i = 0; i < _model->nq; ++i)
+                for(int i = 0; i < std::min(_model->nq, _model->nu); ++i)
                 {
                     _jointState->ctrl[i] += msg->data[i] / (double)_simFrequency;                   // Integrate velocity to position level
                 }
@@ -191,6 +224,7 @@ MuJoCoROS::joint_command_callback(const std_msgs::msg::Float64MultiArray::Shared
                 {
                     _torqueInput[i] = msg->data[i];
                 }
+                _torqueReceived = true;
                 break;
             }
             default:

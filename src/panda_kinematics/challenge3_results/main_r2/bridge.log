@@ -1,0 +1,2 @@
+[INFO] [1795469295.554078376] [mujoco_node]: MuJoCo simulation initiated. Publishing the joint state to 'joint_state' topic. Subscribing to joint TORQUE commands via 'joint_commands' topic.
+[INFO] [1795469308.224082498] [rclcpp]: signal_handler(SIGINT/SIGTERM)

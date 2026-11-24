@@ -1,0 +1,8 @@
+PASS  1. M(q) matches MuJoCo's inertia matrix (300 random poses)     max err 4.0e-10 kg m^2
+PASS  2. C dq + g matches MuJoCo's bias force                        max err 9.2e-09 Nm
+PASS  3. M ddq + C dq + g matches MuJoCo inverse dynamics            max err 1.4e-08 Nm (largest relative 7.2e-10)
+PASS  4. XML body frame = DH frame x constant transform, every link  max err 1.3e-15
+PASS  5. power balance: d(kinetic energy)/dt = dq.(tau - g)          max err 4.5e-09 W
+PASS  6. compute_dynamics fits in the 10 ms control period           1.7 ms per call
+
+ALL CHECKS PASSED

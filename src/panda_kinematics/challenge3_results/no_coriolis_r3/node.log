@@ -1,0 +1,26 @@
+[INFO] [1795469440.323878672] [controller_node]: Trajectory generated. Starting Controller.
+Traceback (most recent call last):
+  File "/tmp/tmpoo6v7i41_controller_node.py", line 582, in <module>
+    main()
+  File "/tmp/tmpoo6v7i41_controller_node.py", line 577, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 907, in _spin_once_impl
+    handler, entity, node = self.wait_for_ready_callbacks(
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 877, in wait_for_ready_callbacks
+    return next(self._cb_iter)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 724, in _wait_for_ready_callbacks
+    context_stack.enter_context(srv.handle)
+  File "/usr/lib/python3.12/contextlib.py", line 527, in enter_context
+    self._push_cm_exit(cm, _exit)
+  File "/usr/lib/python3.12/contextlib.py", line 546, in _push_cm_exit
+    self._push_exit_callback(_exit_wrapper, True)
+  File "/usr/lib/python3.12/contextlib.py", line 548, in _push_exit_callback
+    def _push_exit_callback(self, callback, is_sync=True):
+
+KeyboardInterrupt

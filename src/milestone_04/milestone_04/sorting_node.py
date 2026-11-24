@@ -193,7 +193,8 @@ class SortingNode(Node):
             return
         self.exec.set_plan(plan, self.t_now)
         self._publish_path(plan)
-        self._status(f"manual: {name}")
+        note = getattr(plan, "note", None)
+        self._status(f"manual: {name}" + (f" ({note})" if note else ""), "warn" if note else "info")
 
     def _start_sorting(self):
         if self.boxes is None:

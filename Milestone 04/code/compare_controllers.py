@@ -6,7 +6,7 @@ Runs the full colour-sorting cycle in MuJoCo for: built-in position servo, PD + 
 compensation, computed torque. Writes results/controller_comparison.png, results/plan_profiles.png
 and results/controller_comparison.txt.
 
-Run:  .venv/bin/python "Milestone 04/compare_controllers.py"
+Run:  .venv/bin/python "Milestone 04/code/compare_controllers.py"
 """
 import os
 import sys
@@ -15,7 +15,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src")
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src")
 sys.path.insert(0, os.path.join(ROOT, "milestone_03"))
 sys.path.insert(0, os.path.join(ROOT, "milestone_04"))
 from milestone_03 import kinematics as K

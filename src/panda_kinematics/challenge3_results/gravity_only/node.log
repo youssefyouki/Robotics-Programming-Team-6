@@ -1,0 +1,34 @@
+[INFO] [1795469454.348217614] [controller_node]: Trajectory generated. Starting Controller.
+Traceback (most recent call last):
+  File "/tmp/tmplbcu4e1b_controller_node.py", line 582, in <module>
+    main()
+  File "/tmp/tmplbcu4e1b_controller_node.py", line 577, in main
+    rclpy.spin(node)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/__init__.py", line 247, in spin
+    executor.spin_once()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 926, in spin_once
+    self._spin_once_impl(timeout_sec)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 916, in _spin_once_impl
+    handler()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 270, in __call__
+    self._execute_coroutine_step(self._handler)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/task.py", line 286, in _execute_coroutine_step
+    result = coro.send(None)
+             ^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 592, in handler
+    await call_coroutine()
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 454, in _execute
+    await await_or_execute(tmr.callback)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 115, in await_or_execute
+    return callback(*args)
+           ^^^^^^^^^^^^^^^
+  File "/tmp/tmplbcu4e1b_controller_node.py", line 553, in control_loop
+    M, Cg = compute_dynamics(self.q_current, np.zeros(7), np.zeros(7))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/tmplbcu4e1b_controller_node.py", line 289, in compute_dynamics
+    mask = np.triu(np.ones((L, L)), k=1)[:, :, None]                             # 1 where j > k: only later axes turn with joint k
+                   ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/numpy/core/numeric.py", line 136, in ones
+    @set_array_function_like_doc
+    
+KeyboardInterrupt
